@@ -72,13 +72,13 @@ def predict_image(model, img_path):
     
     # 원본 (Resize됨)
     plt.subplot(1, 2, 1)
-    plt.title("Input (Noisy Sketch)")
+    plt.title("Input")
     plt.imshow(img_resized, cmap='gray')
     plt.axis('off')
 
     # 결과물
     plt.subplot(1, 2, 2)
-    plt.title("AI Output (Cleaned)")
+    plt.title("AI Output")
     plt.imshow(result_img, cmap='gray')
     plt.axis('off')
 
