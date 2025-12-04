@@ -7,25 +7,25 @@ import tensorflow as tf
 from tensorflow.keras import layers, models, Input
 
 # ====================================================
-# [0] GPU 설정 (OOM 오류 방지)
+# [0] GPU 설정
 # ====================================================
-# 윈도우 TF 2.10 환경에서 GPU 메모리 증가를 허용합니다.
+# 윈도우 TF 2.10 환경에서 GPU 메모리 증가 허용
 gpus = tf.config.list_physical_devices('GPU')
 if gpus:
     try:
-        print(f"✅ GPU 감지됨: {len(gpus)}개 사용 가능")
-        print(f"   장치명: {gpus[0].name}")
+        print(f"GPU 감지됨: {len(gpus)}개 사용 가능")
+        print(f"장치명: {gpus[0].name}")
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
     except RuntimeError as e:
         print(e)
 else:
-    print("ℹ️ GPU가 감지되지 않았습니다. CPU 모드로 실행합니다.")
+    print("GPU가 감지되지 않았습니다. CPU 모드로 실행합니다.")
 
 # ====================================================
 # [1] 설정: 경로 및 하이퍼파라미터
 # ====================================================
-# 현재 파일 위치를 기준으로 경로를 설정합니다.
+# 현재 파일 위치를 기준으로 경로를 설정
 try:
     BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 except NameError:
@@ -78,18 +78,18 @@ def add_noise_skew(img):
     return cv2.warpAffine(img, M, (cols, rows), borderValue=(255, 255, 255))
 
 # ====================================================
-# [3] 데이터셋 생성 및 로드 로직
+# [3] 데이터셋 생성 및 로드
 # ====================================================
 def generate_dataset():
-    print("\n🚀 [1/4] 데이터셋 생성 시작...")
+    print("\n[1/4] 데이터셋 생성 시작...")
     if not os.path.exists(CLEAN_IMG_PATH):
-        print(f"❌ 오류: '{CLEAN_IMG_PATH}' 폴더가 없습니다.")
+        print(f"오류: '{CLEAN_IMG_PATH}' 폴더가 없습니다.")
         return False
 
     clean_files = [f for f in os.listdir(CLEAN_IMG_PATH) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
     
     if not clean_files:
-        print(f"❌ 오류: '{CLEAN_IMG_PATH}' 폴더에 이미지가 없습니다. 스케치 이미지를 넣어주세요.")
+        print(f"오류: '{CLEAN_IMG_PATH}' 폴더에 이미지가 없습니다. 스케치 이미지를 넣어주세요.")
         return False
 
     noise_functions = [add_noise_line, add_noise_cut, add_noise_thickness, add_noise_skew]
@@ -118,7 +118,7 @@ def generate_dataset():
             cv2.imwrite(os.path.join(save_dir, fname), noisy_img)
         count += 1
         
-    print(f"✅ 총 {count}세트({count*4}장) 데이터 생성 완료.")
+    print(f"총 {count}세트({count*4}장) 데이터 생성 완료.")
     return True
 
 def load_dataset_paths():
@@ -158,7 +158,7 @@ def load_image_tf(noisy_path, clean_path):
 # ====================================================
 def ResBlock(x, filters):
     shortcut = x
-    # 채널 수가 다르면 1x1 Conv로 맞춰줍니다.
+    # 채널 수가 다르면 1x1 Conv로 맞춰줌
     if x.shape[-1] != filters:
         shortcut = layers.Conv2D(filters, 1, padding='same')(x)
     
@@ -226,7 +226,7 @@ def build_model():
     return models.Model(inputs, outputs)
 
 # ====================================================
-# [5] 메인 실행 루틴
+# [5] 메인 실행
 # ====================================================
 if __name__ == '__main__':
     # 1. 데이터 생성
@@ -235,13 +235,13 @@ if __name__ == '__main__':
         
         if len(X_paths) > 0:
             # 2. 데이터 파이프라인 구축
-            print("\n🚀 [2/4] 데이터 파이프라인 구축 중...")
+            print("\n[2/4] 데이터 파이프라인 구축 중...")
             dataset = tf.data.Dataset.from_tensor_slices((X_paths, Y_paths))
             dataset = dataset.map(load_image_tf)
             dataset = dataset.shuffle(400).batch(BATCH_SIZE)
             
             # 3. 모델 구축 및 학습
-            print("\n🚀 [3/4] 모델 구축 및 학습 시작...")
+            print("\n[3/4] 모델 구축 및 학습 시작...")
             model = build_model()
             model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
             
@@ -270,19 +270,19 @@ if __name__ == '__main__':
                 callbacks=[checkpoint_best, checkpoint_final]
             )
             
-            print(f"\n🎉 학습 완료!")
+            print(f"\n학습 완료!")
             print(f"   - 최고 성능 모델: {best_save_path}")
             print(f"   - 최종 학습 모델: {final_save_path}")
 
             # 4. 결과 확인 (첫 번째 데이터로 테스트)
-            print("\n🚀 [4/4] 학습 결과 테스트...")
+            print("\n[4/4] 학습 결과 테스트...")
             
             # [수정] save_path 대신 best_save_path 사용
             if os.path.exists(best_save_path):
                 best_model = tf.keras.models.load_model(best_save_path)
-                print(f"📂 최적 모델 로드 성공: {best_save_path}")
+                print(f"최적 모델 로드 성공: {best_save_path}")
             else:
-                print("⚠️ 최적 모델을 찾을 수 없어 학습된 마지막 상태(model)를 사용합니다.")
+                print("최적 모델을 찾을 수 없어 학습된 마지막 상태(model)를 사용합니다.")
                 best_model = model
             
             test_noisy_path = X_paths[0]
@@ -313,4 +313,5 @@ if __name__ == '__main__':
             plt.show()
             
         else:
-            print("❌ 데이터 경로를 찾지 못했습니다.")
+
+            print("데이터 경로를 찾지 못했습니다.")
